@@ -1,0 +1,194 @@
+name: Build Side Stand Calculator APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create Android project
+        run: |
+          mkdir -p app/src/main/java/com/sidestand/calculator
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "SideStandCalculator"
+          include ':app'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.sidestand.calculator'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.sidestand.calculator'
+                  minSdk 23
+                  targetSdk 28
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:theme="@android:style/Theme.Material.Light.NoActionBar"
+                  android:label="Side Stand Calculator"
+                  android:usesCleartextTraffic="false">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/sidestand/calculator/MainActivity.java <<'EOF'
+          package com.sidestand.calculator;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebSettings;
+
+          public class MainActivity extends Activity {
+              @Override
+              public void onCreate(Bundle state) {
+                  super.onCreate(state);
+                  WebView web = new WebView(this);
+                  WebSettings settings = web.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  setContentView(web);
+                  web.loadDataWithBaseURL(null, html(), "text/html", "UTF-8", null);
+              }
+
+              private String html() {
+                  return """
+          <!DOCTYPE html><html lang="id"><head>
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <style>
+          *{box-sizing:border-box}
+          body{margin:0;background:#101010;color:white;font-family:Arial,sans-serif;padding:22px}
+          .logo{text-align:center;font-size:13px;letter-spacing:5px;color:#aaa;margin-top:14px}
+          h1{text-align:center;font-size:27px;letter-spacing:1px;margin:12px 0 5px}
+          .sub{text-align:center;color:#aaa;margin-bottom:26px;font-size:12px}
+          .box{background:#1c1c1c;border:1px solid #383838;border-radius:15px;padding:17px;margin-bottom:15px}
+          label{display:block;font-size:13px;color:#ccc;margin:12px 0 7px}
+          select,input{width:100%;padding:13px;border-radius:9px;border:1px solid #444;background:#111;color:white;font-size:15px}
+          .check{display:flex;gap:10px;align-items:center;margin:15px 0;color:#eee}
+          .check input{width:19px;height:19px;accent-color:white}
+          .row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
+          .total{background:white;color:#111;border-radius:13px;padding:20px;text-align:center}
+          .total small{letter-spacing:2px}.price{font-size:29px;font-weight:bold;margin:8px 0}
+          .detail{font-size:13px;line-height:1.9;color:#ddd}
+          button{width:100%;border:0;padding:14px;border-radius:9px;font-size:15px;font-weight:bold;margin-top:12px}
+          .black{background:#333;color:white}.white{background:white;color:#111}
+          .note{font-size:11px;color:#999;text-align:center;margin:18px 0}
+          </style></head><body>
+          <div class="logo">SIDE STAND STUDIO</div>
+          <h1>PRICE CALCULATOR</h1>
+          <div class="sub">CLOTHING ORDER ESTIMATOR</div>
+          <div class="box">
+          <label>Jenis bahan</label>
+          <select id="fabric"><option value="35000">Combed 30s — Rp35.000</option><option value="40000">Combed 24s — Rp40.000</option></select>
+          <label>Ukuran kaos</label>
+          <select id="size"><option value="0">S</option><option value="0">M</option><option value="0">L</option><option value="0">XL</option><option value="5000">XXL (+Rp5.000)</option><option value="10000">XXXL (+Rp10.000)</option><option value="15000">XXXXL (+Rp15.000)</option></select>
+          <div class="check"><input type="checkbox" id="long"><span>Lengan panjang (+Rp10.000)</span></div>
+          <div class="check"><input type="checkbox" id="rib"><span>Tambah rib (+Rp5.000)</span></div>
+          <label>Panjang gambar/sablon ke samping (cm)</label>
+          <input id="print" type="number" min="0" step="1" value="0" placeholder="Contoh: 15 cm">
+          <div class="note">Biaya sablon Rp1.000 per cm ke samping.</div>
+          <label>Jumlah kaos</label>
+          <input id="qty" type="number" min="1" step="1" value="1">
+          </div>
+          <div class="total"><small>TOTAL PESANAN</small><div class="price" id="total">Rp35.000</div><div id="each">Rp35.000 / kaos</div></div>
+          <div class="box" style="margin-top:15px"><b>Rincian harga</b><div class="detail" id="details"></div><button class="white" onclick="share()">BAGIKAN RINCIAN</button><button class="black" onclick="resetForm()">RESET KALKULATOR</button></div>
+          <div class="note">SIDE STAND STUDIO · THANKS FOR YOUR SUPPORT</div>
+          <script>
+          const rupiah=n=>'Rp'+Math.round(n).toLocaleString('id-ID');
+          function calc(){
+            let base=+fabric.value, sizeCost=+size.value;
+            let longCost=long.checked?10000:0, ribCost=rib.checked?5000:0;
+            let width=Math.max(0,Number(print.value)||0);
+            let qty=Math.max(1,Math.floor(Number(document.getElementById('qty').value)||1));
+            let printCost=width*1000;
+            let each=base+sizeCost+longCost+ribCost+printCost;
+            total.textContent=rupiah(each*qty);document.getElementById('each').textContent=rupiah(each)+' / kaos';
+            details.innerHTML='Bahan: '+rupiah(base)+'<br>Tambahan ukuran: '+rupiah(sizeCost)+'<br>Lengan panjang: '+rupiah(longCost)+'<br>Rib: '+rupiah(ribCost)+'<br>Sablon ('+width+' cm): '+rupiah(printCost)+'<br>Jumlah: '+qty+' kaos';
+          }
+          function share(){
+            let txt='SIDE STAND STUDIO\\n'+details.innerText+'\\nTotal: '+total.innerText;
+            if(navigator.share) navigator.share({title:'Rincian Pesanan',text:txt});
+            else if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert('Rincian disalin!'));
+            else alert(txt);
+          }
+          function resetForm(){fabric.value='35000';size.value='0';long.checked=false;rib.checked=false;document.getElementById('print').value=0;document.getElementById('qty').value=1;calc()}
+          document.querySelectorAll('select,input').forEach(el=>el.addEventListener('input',calc));
+          calc();
+          </script></body></html>
+          """;
+              }
+          }
+          EOF
+
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build APK
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Side-Stand-Calculator-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
