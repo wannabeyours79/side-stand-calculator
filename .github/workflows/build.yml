@@ -95,7 +95,7 @@ jobs:
           </manifest>
           EOF
 
-          cat > app/src/main/java/com/sidestand/calculator/MainActivity.java <<'EOF'
+                    cat > app/src/main/java/com/sidestand/calculator/MainActivity.java <<'EOF'
           package com.sidestand.calculator;
 
           import android.app.Activity;
@@ -115,70 +115,53 @@ jobs:
               }
 
               private String html() {
-                  return """
-          <!DOCTYPE html><html lang="id"><head>
-          <meta name="viewport" content="width=device-width,initial-scale=1">
-          <style>
-          *{box-sizing:border-box}
-          body{margin:0;background:#101010;color:white;font-family:Arial,sans-serif;padding:22px}
-          .logo{text-align:center;font-size:13px;letter-spacing:5px;color:#aaa;margin-top:14px}
-          h1{text-align:center;font-size:27px;letter-spacing:1px;margin:12px 0 5px}
-          .sub{text-align:center;color:#aaa;margin-bottom:26px;font-size:12px}
-          .box{background:#1c1c1c;border:1px solid #383838;border-radius:15px;padding:17px;margin-bottom:15px}
-          label{display:block;font-size:13px;color:#ccc;margin:12px 0 7px}
-          select,input{width:100%;padding:13px;border-radius:9px;border:1px solid #444;background:#111;color:white;font-size:15px}
-          .check{display:flex;gap:10px;align-items:center;margin:15px 0;color:#eee}
-          .check input{width:19px;height:19px;accent-color:white}
-          .row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
-          .total{background:white;color:#111;border-radius:13px;padding:20px;text-align:center}
-          .total small{letter-spacing:2px}.price{font-size:29px;font-weight:bold;margin:8px 0}
-          .detail{font-size:13px;line-height:1.9;color:#ddd}
-          button{width:100%;border:0;padding:14px;border-radius:9px;font-size:15px;font-weight:bold;margin-top:12px}
-          .black{background:#333;color:white}.white{background:white;color:#111}
-          .note{font-size:11px;color:#999;text-align:center;margin:18px 0}
-          </style></head><body>
-          <div class="logo">SIDE STAND STUDIO</div>
-          <h1>PRICE CALCULATOR</h1>
-          <div class="sub">CLOTHING ORDER ESTIMATOR</div>
-          <div class="box">
-          <label>Jenis bahan</label>
-          <select id="fabric"><option value="35000">Combed 30s — Rp35.000</option><option value="40000">Combed 24s — Rp40.000</option></select>
-          <label>Ukuran kaos</label>
-          <select id="size"><option value="0">S</option><option value="0">M</option><option value="0">L</option><option value="0">XL</option><option value="5000">XXL (+Rp5.000)</option><option value="10000">XXXL (+Rp10.000)</option><option value="15000">XXXXL (+Rp15.000)</option></select>
-          <div class="check"><input type="checkbox" id="long"><span>Lengan panjang (+Rp10.000)</span></div>
-          <div class="check"><input type="checkbox" id="rib"><span>Tambah rib (+Rp5.000)</span></div>
-          <label>Panjang gambar/sablon ke samping (cm)</label>
-          <input id="print" type="number" min="0" step="1" value="0" placeholder="Contoh: 15 cm">
-          <div class="note">Biaya sablon Rp1.000 per cm ke samping.</div>
-          <label>Jumlah kaos</label>
-          <input id="qty" type="number" min="1" step="1" value="1">
-          </div>
-          <div class="total"><small>TOTAL PESANAN</small><div class="price" id="total">Rp35.000</div><div id="each">Rp35.000 / kaos</div></div>
-          <div class="box" style="margin-top:15px"><b>Rincian harga</b><div class="detail" id="details"></div><button class="white" onclick="share()">BAGIKAN RINCIAN</button><button class="black" onclick="resetForm()">RESET KALKULATOR</button></div>
-          <div class="note">SIDE STAND STUDIO · THANKS FOR YOUR SUPPORT</div>
-          <script>
-          const rupiah=n=>'Rp'+Math.round(n).toLocaleString('id-ID');
-          function calc(){
-            let base=+fabric.value, sizeCost=+size.value;
-            let longCost=long.checked?10000:0, ribCost=rib.checked?5000:0;
-            let width=Math.max(0,Number(print.value)||0);
-            let qty=Math.max(1,Math.floor(Number(document.getElementById('qty').value)||1));
-            let printCost=width*1000;
-            let each=base+sizeCost+longCost+ribCost+printCost;
-            total.textContent=rupiah(each*qty);document.getElementById('each').textContent=rupiah(each)+' / kaos';
-            details.innerHTML='Bahan: '+rupiah(base)+'<br>Tambahan ukuran: '+rupiah(sizeCost)+'<br>Lengan panjang: '+rupiah(longCost)+'<br>Rib: '+rupiah(ribCost)+'<br>Sablon ('+width+' cm): '+rupiah(printCost)+'<br>Jumlah: '+qty+' kaos';
-          }
-          function share(){
-            let txt='SIDE STAND STUDIO\\n'+details.innerText+'\\nTotal: '+total.innerText;
-            if(navigator.share) navigator.share({title:'Rincian Pesanan',text:txt});
-            else if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert('Rincian disalin!'));
-            else alert(txt);
-          }
-          function resetForm(){fabric.value='35000';size.value='0';long.checked=false;rib.checked=false;document.getElementById('print').value=0;document.getElementById('qty').value=1;calc()}
-          document.querySelectorAll('select,input').forEach(el=>el.addEventListener('input',calc));
-          calc();
-          </script></body></html>
-          """;
+                  StringBuilder s = new StringBuilder();
+                  s.append("<!DOCTYPE html><html lang='id'><head>");
+                  s.append("<meta name='viewport' content='width=device-width,initial-scale=1'>");
+                  s.append("<style>");
+                  s.append("*{box-sizing:border-box}");
+                  s.append("body{margin:0;background:#101010;color:white;font-family:Arial,sans-serif;padding:22px}");
+                  s.append(".logo{text-align:center;font-size:13px;letter-spacing:5px;color:#aaa;margin-top:14px}");
+                  s.append("h1{text-align:center;font-size:27px;margin:12px 0 5px}");
+                  s.append(".sub{text-align:center;color:#aaa;margin-bottom:26px;font-size:12px}");
+                  s.append(".box{background:#1c1c1c;border:1px solid #383838;border-radius:15px;padding:17px;margin-bottom:15px}");
+                  s.append("label{display:block;font-size:13px;color:#ccc;margin:12px 0 7px}");
+                  s.append("select,input{width:100%;padding:13px;border-radius:9px;border:1px solid #444;background:#111;color:white;font-size:15px}");
+                  s.append(".check{display:flex;gap:10px;align-items:center;margin:15px 0;color:#eee}");
+                  s.append(".check input{width:19px;height:19px}");
+                  s.append(".total{background:white;color:#111;border-radius:13px;padding:20px;text-align:center}");
+                  s.append(".price{font-size:29px;font-weight:bold;margin:8px 0}");
+                  s.append(".detail{font-size:13px;line-height:1.9;color:#ddd}");
+                  s.append("button{width:100%;border:0;padding:14px;border-radius:9px;font-size:15px;font-weight:bold;margin-top:12px}");
+                  s.append(".black{background:#333;color:white}.white{background:white;color:#111}");
+                  s.append(".note{font-size:11px;color:#999;text-align:center;margin:18px 0}");
+                  s.append("</style></head><body>");
+                  s.append("<div class='logo'>SIDE STAND STUDIO</div>");
+                  s.append("<h1>PRICE CALCULATOR</h1>");
+                  s.append("<div class='sub'>CLOTHING ORDER ESTIMATOR</div>");
+                  s.append("<div class='box'>");
+                  s.append("<label>Jenis bahan</label>");
+                  s.append("<select id='fabric'><option value='35000'>Combed 30s - Rp35.000</option><option value='40000'>Combed 24s - Rp40.000</option></select>");
+                  s.append("<label>Ukuran kaos</label>");
+                  s.append("<select id='size'><option value='0'>S</option><option value='0'>M</option><option value='0'>L</option><option value='0'>XL</option><option value='5000'>XXL (+Rp5.000)</option><option value='10000'>XXXL (+Rp10.000)</option><option value='15000'>XXXXL (+Rp15.000)</option></select>");
+                  s.append("<div class='check'><input type='checkbox' id='long'><span>Lengan panjang (+Rp10.000)</span></div>");
+                  s.append("<div class='check'><input type='checkbox' id='rib'><span>Tambah rib (+Rp5.000)</span></div>");
+                  s.append("<label>Panjang sablon ke samping (cm)</label>");
+                  s.append("<input id='print' type='number' min='0' step='1' value='0'>");
+                  s.append("<div class='note'>Biaya sablon Rp1.000 per cm ke samping.</div>");
+                  s.append("<label>Jumlah kaos</label><input id='qty' type='number' min='1' step='1' value='1'></div>");
+                  s.append("<div class='total'><small>TOTAL PESANAN</small><div class='price' id='total'>Rp35.000</div><div id='each'>Rp35.000 / kaos</div></div>");
+                  s.append("<div class='box' style='margin-top:15px'><b>Rincian harga</b><div class='detail' id='details'></div>");
+                  s.append("<button class='white' onclick='share()'>BAGIKAN RINCIAN</button><button class='black' onclick='resetForm()'>RESET KALKULATOR</button></div>");
+                  s.append("<div class='note'>SIDE STAND STUDIO - THANKS FOR YOUR SUPPORT</div>");
+                  s.append("<script>");
+                  s.append("const rupiah=n=>'Rp'+Math.round(n).toLocaleString('id-ID');");
+                  s.append("function calc(){let base=+document.getElementById('fabric').value;let sizeCost=+document.getElementById('size').value;let longCost=document.getElementById('long').checked?10000:0;let ribCost=document.getElementById('rib').checked?5000:0;let width=Math.max(0,Number(document.getElementById('print').value)||0);let qty=Math.max(1,Math.floor(Number(document.getElementById('qty').value)||1));let printCost=width*1000;let each=base+sizeCost+longCost+ribCost+printCost;document.getElementById('total').textContent=rupiah(each*qty);document.getElementById('each').textContent=rupiah(each)+' / kaos';document.getElementById('details').innerHTML='Bahan: '+rupiah(base)+'<br>Tambahan ukuran: '+rupiah(sizeCost)+'<br>Lengan panjang: '+rupiah(longCost)+'<br>Rib: '+rupiah(ribCost)+'<br>Sablon ('+width+' cm): '+rupiah(printCost)+'<br>Jumlah: '+qty+' kaos';}");
+                  s.append("function share(){let txt='SIDE STAND STUDIO\\n'+document.getElementById('details').innerText+'\\nTotal: '+document.getElementById('total').innerText;if(navigator.share)navigator.share({title:'Rincian Pesanan',text:txt});else alert(txt);}");
+                  s.append("function resetForm(){document.getElementById('fabric').value='35000';document.getElementById('size').value='0';document.getElementById('long').checked=false;document.getElementById('rib').checked=false;document.getElementById('print').value=0;document.getElementById('qty').value=1;calc();}");
+                  s.append("document.querySelectorAll('select,input').forEach(el=>el.addEventListener('input',calc));calc();");
+                  s.append("</script></body></html>");
+                  return s.toString();
               }
           }
           EOF
