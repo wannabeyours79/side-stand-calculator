@@ -75,8 +75,8 @@ jobs:
                   applicationId 'com.sidestand.calculator'
                   minSdk 23
                   targetSdk 28
-                  versionCode 2
-                  versionName '1.1'
+                  versionCode 3
+                  versionName '1.2'
               }
 
               compileOptions {
@@ -110,6 +110,7 @@ jobs:
           import android.app.Activity;
           import android.os.Bundle;
           import android.content.Context;
+          import android.content.Intent;
           import android.webkit.WebView;
           import android.webkit.WebSettings;
           import android.webkit.JavascriptInterface;
@@ -120,6 +121,7 @@ jobs:
           public class MainActivity extends Activity {
 
               private WebView web;
+              private boolean printPending = false;
 
               @Override
               public void onCreate(Bundle state) {
@@ -154,6 +156,7 @@ jobs:
                           (PrintManager) getSystemService(Context.PRINT_SERVICE);
 
                       if (manager != null && web != null) {
+                          printPending = true;
                           PrintDocumentAdapter adapter =
                               web.createPrintDocumentAdapter("Nota-Side-Stand");
 
@@ -171,6 +174,27 @@ jobs:
                           );
                       }
                   });
+              }
+
+              @JavascriptInterface
+              public void shareText(String text) {
+                  runOnUiThread(() -> {
+                      Intent send = new Intent(Intent.ACTION_SEND);
+                      send.setType("text/plain");
+                      send.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
+                      startActivity(Intent.createChooser(send, "Bagikan nota"));
+                  });
+              }
+
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  if (printPending && web != null) {
+                      printPending = false;
+                      web.postDelayed(() -> web.evaluateJavascript(
+                          "if(window.onPrintDialogClosed){window.onPrintDialogClosed();}", null
+                      ), 700);
+                  }
               }
 
               private String html() {
@@ -592,7 +616,7 @@ jobs:
           </div>
 
           <div class="total">
-              <small>TOTAL SELURUH PESANAN</small>
+                     <small>TOTAL SELURUH PESANAN</small>
               <div class="price" id="total">Rp0</div>
               <div id="itemCount">0 item · 0 pcs</div>
           </div>
@@ -617,7 +641,7 @@ jobs:
                       BAGIKAN RINCIAN
                   </button>
 
-                  <button class="action red"onclick="clearCart()">
+                  <button class="action red" onclick="clearCart()">
                       KOSONGKAN KERANJANG
                   </button>
               </div>
@@ -661,6 +685,48 @@ jobs:
                   }[c];
               });
           }
+
+          function currentInvoiceNumber() {
+              const next = Math.max(1, Number(localStorage.getItem('sssNextInvoice') || '1'));
+              return '#SSS-' + String(next).padStart(4, '0');
+          }
+
+          function updateInvoiceNumber() {
+              const node = el('invoiceNumber');
+              if (node) node.textContent = currentInvoiceNumber();
+          }
+
+          function finishCurrentOrder() {
+              if (cart.length === 0) return;
+              if (!confirm('Sudah selesai mencetak atau menyimpan nota? Jika ya, keranjang dikosongkan dan nomor nota berikutnya dibuat.')) {
+                  return;
+              }
+              const next = Math.max(1, Number(localStorage.getItem('sssNextInvoice') || '1'));
+              localStorage.setItem('sssNextInvoice', String(next + 1));
+              cart = [];
+              editIndex = -1;
+              el('customerName').value = '';
+              el('customerPhone').value = '';
+              el('customerNamePrint').textContent = '-';
+              el('customerPhonePrint').textContent = '-';
+              el('formHeading').textContent = 'Tambah produk ke keranjang';
+              el('addButton').textContent = 'TAMBAHKAN KE KERANJANG';
+              el('cancelEditButton').classList.add('hidden');
+              resetForm();
+              renderCart();
+              updateInvoiceNumber();
+              alert('Pesanan selesai. Nomor nota berikutnya: ' + currentInvoiceNumber());
+          }
+
+          window.onPrintDialogClosed = function() {
+              if (cart.length > 0) finishCurrentOrder();
+          };
+
+          window.addEventListener('afterprint', function() {
+              if (!(window.Android && window.Android.printNota) && cart.length > 0) {
+                  finishCurrentOrder();
+              }
+          });
 
           function setProduct(p) {
               product = p;
@@ -891,7 +957,6 @@ jobs:
                       </div>`;
                   }).join('');
               }
-
               const total = cart.reduce(
                   (sum, item) => sum + item.subtotal, 0
               );
@@ -1003,7 +1068,7 @@ jobs:
                   alert('Keranjang masih kosong!');
                   return;
               }
-
+              updateInvoiceNumber();
               if (window.Android && window.Android.printNota) {
                   window.Android.printNota();
               } else {
@@ -1016,20 +1081,28 @@ jobs:
                   alert('Keranjang masih kosong!');
                   return;
               }
-
-              const text =
-                  'NOTA SIDE STAND STUDIO\\n' +
-                  el('details').innerText +
-                  '\\nTotal: ' + el('total').innerText;
-
-              if (navigator.share) {
-                  navigator.share({
-                      title: 'Nota Side Stand Studio',
-                      text: text
-                  }).catch(() => {});
-              } else if (navigator.clipboard) {
+              const customer = el('customerName').value.trim();
+              const phone = el('customerPhone').value.trim();
+              const text = [
+                  'SIDE STAND STUDIO',
+                  'NOTA PESANAN ' + currentInvoiceNumber(),
+                  'Tanggal: ' + new Date().toLocaleString('id-ID'),
+                  customer ? 'Nama pelanggan: ' + customer : '',
+                  phone ? 'WhatsApp: ' + phone : '',
+                  '',
+                  el('details').innerText,
+                  '',
+                  'TOTAL PEMBAYARAN: ' + el('total').innerText,
+                  '',
+                  'Terima kasih sudah mempercayai Side Stand Studio!'
+              ].filter(Boolean).join('\n');
+              if (window.Android && window.Android.shareText) {
+                  window.Android.shareText(text);
+              } else if (navigator.share) {
+                  navigator.share({title: 'Nota Side Stand Studio', text: text}).catch(() => {});
+              } else if (navigator.clipboard && navigator.clipboard.writeText) {
                   navigator.clipboard.writeText(text)
-                      .then(() => alert('Rincian berhasil disalin!'))
+                      .then(() => alert('Nota disalin. Lu bisa tempel ke WhatsApp.'))
                       .catch(() => alert(text));
               } else {
                   alert(text);
@@ -1041,22 +1114,19 @@ jobs:
                   alert('Keranjang sudah kosong.');
                   return;
               }
-
-              if (confirm('Yakin ingin menghapus semua isi keranjang?')) {
-                  cart = [];
-                  editIndex = -1;
-
-                  el('formHeading').textContent =
-                      'Tambah produk ke keranjang';
-
-                  el('addButton').textContent =
-                      'TAMBAHKAN KE KERANJANG';
-
-                  el('cancelEditButton').classList.add('hidden');
-
-                  resetForm();
-                  renderCart();
-              }
+              if (!confirm('Yakin ingin menghapus semua isi keranjang?')) return;
+              cart = [];
+              editIndex = -1;
+              el('customerName').value = '';
+              el('customerPhone').value = '';
+              el('customerNamePrint').textContent = '-';
+              el('customerPhonePrint').textContent = '-';
+              el('formHeading').textContent = 'Tambah produk ke keranjang';
+              el('addButton').textContent = 'TAMBAHKAN KE KERANJANG';
+              el('cancelEditButton').classList.add('hidden');
+              resetForm();
+              renderCart();
+              alert('Keranjang berhasil dikosongkan. Nomor nota tidak berubah.');
           }
 
           el('customerName').addEventListener('input', () => {
@@ -1066,6 +1136,7 @@ jobs:
               el('customerPhonePrint').textContent = el('customerPhone').value.trim() || '-';
           });
 
+          updateInvoiceNumber();
           setProduct('oblong');
           renderCart();
           </script>
