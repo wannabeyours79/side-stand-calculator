@@ -392,7 +392,27 @@ jobs:
               padding: 18px 5px;
           }
 
+          .print-only { display: none; }
+          .invoice-head { text-align:center; padding: 10px 0 18px; border-bottom:2px solid #111; }
+          .invoice-logo { display:block; width:100%; max-height:90px; object-fit:contain; margin:0 auto 10px; }
+          .invoice-brand { font-size:25px; letter-spacing:8px; font-weight:800; }
+          .invoice-tag { font-size:10px; letter-spacing:5px; margin-top:7px; }
+          .invoice-title-row { display:flex; justify-content:space-between; gap:20px; margin:22px 0 18px; align-items:end; }
+          .invoice-title { font-size:27px; font-weight:800; }
+          .invoice-slogan { text-align:right; font-size:10px; letter-spacing:4px; line-height:1.8; }
+          .invoice-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; margin:16px 0 22px; font-size:12px; }
+          .invoice-table { width:100%; border-collapse:collapse; font-size:11px; }
+          .invoice-table th { background:#111; color:#fff; padding:10px 7px; text-align:left; }
+          .invoice-table td { padding:12px 7px; border-bottom:1px solid #aaa; vertical-align:top; }
+          .invoice-table .num, .invoice-table .money { text-align:right; white-space:nowrap; }
+          .invoice-total-row { display:flex; justify-content:space-between; align-items:center; gap:15px; margin:20px 0; padding:16px 0; border-bottom:2px solid #111; }
+          .invoice-total-label { font-size:12px; font-weight:bold; }
+          .invoice-total-amount { font-size:30px; font-weight:900; }
+          .invoice-bottom { display:grid; grid-template-columns:1fr 1fr; gap:20px; background:#f1f1f1; padding:16px; border-radius:8px; font-size:11px; }
+          .invoice-bottom h3 { margin:0 0 10px; font-size:12px; }
+          .invoice-footer { display:flex; justify-content:space-between; gap:10px; border-top:1px solid #111; padding-top:14px; margin-top:22px; font-size:10px; letter-spacing:2px; }
           @media print {
+              @page { size: A4; margin: 14mm; }
               body {
                   background: white;
                   color: #111;
@@ -407,9 +427,17 @@ jobs:
               .tabs,
               .no-print,
               .note,
-              .form-box {
+              .form-box,
+              body > .brand,
+              body > h1,
+              body > .sub,
+              body > .box,
+              body > .total {
                   display: none !important;
               }
+              .print-only { display: block !important; color:#111; background:#fff; }
+              .invoice-table { page-break-inside:auto; }
+              .invoice-table tr { page-break-inside:avoid; page-break-after:auto; }
 
               .box {
                   background: white;
@@ -451,6 +479,36 @@ jobs:
           <h1>PRICE CALCULATOR</h1>
 
           <div class="sub">CLOTHING ORDER ESTIMATOR</div>
+
+          <section class="print-only" id="printInvoice">
+              <div class="invoice-head">
+                  <div class="invoice-brand">SIDE STAND STUDIO</div>
+                  <div class="invoice-tag">STREETWEAR &amp; CLOTHING</div>
+              </div>
+              <div class="invoice-title-row">
+                  <div class="invoice-title">NOTA PESANAN</div>
+                  <div class="invoice-slogan">BETTER CLOTHES<br>BETTER DAYS</div>
+              </div>
+              <div class="invoice-meta">
+                  <div>No. Nota: <b id="invoiceNumber">#SSS-0001</b></div>
+                  <div>Tanggal: <b id="invoiceDate">-</b></div>
+                  <div>Nama: <b id="customerNamePrint">-</b></div>
+                  <div>No. WhatsApp: <b id="customerPhonePrint">-</b></div>
+              </div>
+              <table class="invoice-table">
+                  <thead><tr><th>No.</th><th>Produk</th><th>Bahan</th><th>Ukuran</th><th>Qty</th><th>Harga/pcs</th><th>Subtotal</th></tr></thead>
+                  <tbody id="invoiceRows"></tbody>
+              </table>
+              <div class="invoice-total-row">
+                  <div><div class="invoice-total-label">TOTAL ITEM</div><div id="invoiceItemCount">0 item · 0 pcs</div></div>
+                  <div><div class="invoice-total-label">TOTAL PEMBAYARAN</div><div class="invoice-total-amount" id="invoiceTotal">Rp0</div></div>
+              </div>
+              <div class="invoice-bottom">
+                  <div><h3>RINCIAN TAMBAHAN</h3><div id="invoiceExtras">Belum ada tambahan.</div></div>
+                  <div><h3>CATATAN</h3>• Pastikan ukuran dan jumlah sudah sesuai sebelum proses produksi.<br>• Harga mengikuti bahan dan desain yang dipilih.<br>• Terima kasih telah mempercayai Side Stand Studio.</div>
+              </div>
+              <div class="invoice-footer"><span>@sidestandstudio</span><span>SIDE STAND STUDIO<br>THANKS FOR YOUR SUPPORT</span><span>LOCAL BRAND</span></div>
+          </section>
 
           <div class="tabs no-print">
               <button class="tab active" id="tabOblong"
@@ -541,6 +599,10 @@ jobs:
 
           <div class="box" style="margin-top:14px">
               <b>Rincian nota</b>
+              <label>Nama pelanggan (opsional)</label>
+              <input id="customerName" type="text" placeholder="Nama pelanggan">
+              <label>Nomor WhatsApp (opsional)</label>
+              <input id="customerPhone" type="tel" placeholder="08xxxxxxxxxx">
 
               <div class="detail" id="details">
                   Tambahkan produk ke keranjang untuk membuat nota.
@@ -555,435 +617,4 @@ jobs:
                       BAGIKAN RINCIAN
                   </button>
 
-                  <button class="action red" onclick="clearCart()">
-                      KOSONGKAN KERANJANG
-                  </button>
-              </div>
-          </div>
-
-          <div class="note">
-              SIDE STAND STUDIO · THANKS FOR YOUR SUPPORT
-          </div>
-
-          <script>
-          let product = 'oblong';
-          let cart = [];
-          let editIndex = -1;
-
-          const fabrics = {
-              oblong: [
-                  {name: 'Combed 30s', price: 35000},
-                  {name: 'Combed 24s', price: 40000}
-              ],
-              jersey: [
-                  {name: 'Milano', price: 85000},
-                  {name: 'Jarum', price: 85000},
-                  {name: 'Embos', price: 90000},
-                  {name: 'Puma', price: 90000}
-              ]
-          };
-
-          const rupiah = n =>
-              'Rp' + Math.round(n).toLocaleString('id-ID');
-
-          const el = id => document.getElementById(id);
-
-          function escapeHtml(value) {
-              return String(value).replace(/[&<>"']/g, function(c) {
-                  return {
-                      '&': '&amp;',
-                      '<': '&lt;',
-                      '>': '&gt;',
-                      '"': '&quot;',
-                      "'": '&#39;'
-                  }[c];
-              });
-          }
-
-          function setProduct(p) {
-              product = p;
-
-              el('tabOblong').classList.toggle(
-                  'active', p === 'oblong'
-              );
-
-              el('tabJersey').classList.toggle(
-                  'active', p === 'jersey'
-              );
-
-              el('oblongOptions').classList.toggle(
-                  'hidden', p !== 'oblong'
-              );
-
-              el('jerseyOptions').classList.toggle(
-                  'hidden', p !== 'jersey'
-              );
-
-              const fabric = el('fabric');
-              fabric.innerHTML = '';
-
-              fabrics[p].forEach(f => {
-                  const option = document.createElement('option');
-
-                  option.value = f.price;
-                  option.textContent = f.name + ' - ' + rupiah(f.price);
-                  option.dataset.name = f.name;
-
-                  fabric.appendChild(option);
-              });
-
-              renderCart();
-          }
-
-          function getFormItem() {
-              const fabricOption = el('fabric').selectedOptions[0];
-              const sizeOption = el('size').selectedOptions[0];
-
-              const base = Number(el('fabric').value) || 0;
-              const sizeCost = Number(el('size').value) || 0;
-
-              const longCost =
-                  product === 'oblong' && el('long').checked
-                  ? 10000 : 0;
-
-              const ribCost =
-                  product === 'oblong' && el('rib').checked
-                  ? 5000 : 0;
-
-              const collarCost =
-                  product === 'jersey' && el('collar').checked
-                  ? 5000 : 0;
-
-              const width = Math.max(
-                  0, Number(el('printWidth').value) || 0
-              );
-
-              const qty = Math.max(
-                  1, Math.floor(Number(el('qty').value) || 1)
-              );
-
-              const printCost = width * 1000;
-
-              const each =
-                  base + sizeCost + longCost +
-                  ribCost + collarCost + printCost;
-
-              return {
-                  product: product,
-                  fabricName: fabricOption
-                      ? fabricOption.dataset.name : '-',
-                  base: base,
-                  sizeName: sizeOption
-                      ? sizeOption.textContent : '-',
-                  sizeCost: sizeCost,
-                  longCost: longCost,
-                  ribCost: ribCost,
-                  collarCost: collarCost,
-                  width: width,
-                  printCost: printCost,
-                  qty: qty,
-                  each: each,
-                  subtotal: each * qty
-              };
-          }
-
-          function addOrUpdateCart() {
-              const item = getFormItem();
-
-              if (editIndex >= 0) {
-                  cart[editIndex] = item;
-                  editIndex = -1;
-
-                  el('formHeading').textContent =
-                      'Tambah produk ke keranjang';
-
-                  el('addButton').textContent =
-                      'TAMBAHKAN KE KERANJANG';
-
-                  el('cancelEditButton').classList.add('hidden');
-
-                  alert('Item keranjang berhasil diperbarui.');
-              } else {
-                  cart.push(item);
-              }
-
-              renderCart();
-              resetForm();
-          }
-
-          function editCartItem(index) {
-              const item = cart[index];
-
-              editIndex = index;
-
-              setProduct(item.product);
-
-              el('fabric').value = String(item.base);
-              el('size').value = String(item.sizeCost);
-
-              el('long').checked = item.longCost > 0;
-              el('rib').checked = item.ribCost > 0;
-              el('collar').checked = item.collarCost > 0;
-
-              el('printWidth').value = String(item.width);
-              el('qty').value = String(item.qty);
-
-              el('formHeading').textContent = 'Edit item keranjang';
-              el('addButton').textContent = 'SIMPAN PERUBAHAN';
-
-              el('cancelEditButton').classList.remove('hidden');
-
-              window.scrollTo({top: 0, behavior: 'smooth'});
-          }
-
-          function deleteCartItem(index) {
-              cart.splice(index, 1);
-
-              if (editIndex === index) {
-                  cancelEdit();
-              } else if (editIndex > index) {
-                  editIndex--;
-              }
-
-              renderCart();
-          }
-
-          function cancelEdit() {
-              editIndex = -1;
-
-              el('formHeading').textContent =
-                  'Tambah produk ke keranjang';
-
-              el('addButton').textContent =
-                  'TAMBAHKAN KE KERANJANG';
-
-              el('cancelEditButton').classList.add('hidden');
-
-              resetForm();
-          }
-
-          function resetForm() {
-              el('size').value = '0';
-
-              el('long').checked = false;
-              el('rib').checked = false;
-              el('collar').checked = false;
-
-              el('printWidth').value = '0';
-              el('qty').value = '1';
-          }
-
-          function renderCart() {
-              const list = el('cartList');
-
-              if (cart.length === 0) {
-                  list.innerHTML =
-                      '<div class="empty">Keranjang masih kosong.</div>';
-              } else {
-                  list.innerHTML = cart.map((item, i) => {
-                      const options = [];
-
-                      if (item.longCost) {
-                          options.push('Lengan panjang');
-                      }
-
-                      if (item.ribCost) {
-                          options.push('Rib');
-                      }
-
-                      if (item.collarCost) {
-                          options.push('Kerah');
-                      }
-
-                      if (item.width > 0) {
-                          options.push('Sablon ' + item.width + ' cm');
-                      }
-
-                      return `
-                      <div class="cart-item">
-                          <div class="cart-title">
-                              ${i + 1}. ${escapeHtml(item.product.toUpperCase())}
-                              · Ukuran ${escapeHtml(item.sizeName.split(' ')[0])}
-                          </div>
-
-                          <div class="cart-meta">
-                              Bahan: ${escapeHtml(item.fabricName)}
-                              <br>Jumlah: ${item.qty} pcs
-                              <br>Tambahan: ${escapeHtml(
-                                  options.length ? options.join(', ') : 'Tidak ada'
-                              )}
-                              <br>Harga per pcs: ${rupiah(item.each)}
-                          </div>
-
-                          <div class="cart-price">
-                              Subtotal: ${rupiah(item.subtotal)}
-                          </div>
-
-                          <div class="cart-actions no-print">
-                              <button class="edit"
-                                  onclick="editCartItem(${i})">EDIT</button>
-
-                              <button class="delete"
-                                  onclick="deleteCartItem(${i})">HAPUS</button>
-                          </div>
-                      </div>`;
-                  }).join('');
-              }
-
-              const total = cart.reduce(
-                  (sum, item) => sum + item.subtotal, 0
-              );
-
-              const pcs = cart.reduce(
-                  (sum, item) => sum + item.qty, 0
-              );
-
-              el('total').textContent = rupiah(total);
-
-              el('itemCount').textContent =
-                  cart.length + ' item · ' + pcs + ' pcs';
-
-              if (cart.length === 0) {
-                  el('details').textContent =
-                      'Tambahkan produk ke keranjang untuk membuat nota.';
-
-                  return;
-              }
-
-              const lines = [
-                  'NOTA SIDE STAND STUDIO',
-                  '========================',
-                  ''
-              ];
-
-              cart.forEach((item, i) => {
-                  lines.push(
-                      (i + 1) + '. ' +
-                      item.product.toUpperCase() + ' / ' +
-                      item.fabricName
-                  );
-
-                  lines.push(
-                      '   Ukuran: ' + item.sizeName +
-                      ' | Jumlah: ' + item.qty + ' pcs'
-                  );
-
-                  if (item.longCost) {
-                      lines.push('   Lengan panjang: ' + rupiah(item.longCost));
-                  }
-
-                  if (item.ribCost) {
-                      lines.push('   Rib: ' + rupiah(item.ribCost));
-                  }
-
-                  if (item.collarCost) {
-                      lines.push('   Kerah: ' + rupiah(item.collarCost));
-                  }
-
-                  if (item.width > 0) {
-                      lines.push(
-                          '   Sablon ' + item.width + ' cm: ' +
-                          rupiah(item.printCost)
-                      );
-                  }
-
-                  lines.push('   Harga/pcs: ' + rupiah(item.each));
-                  lines.push('   Subtotal: ' + rupiah(item.subtotal));
-                  lines.push('');
-              });
-
-              lines.push('Jumlah item: ' + cart.length);
-              lines.push('Jumlah pcs: ' + pcs);
-              lines.push('TOTAL: ' + rupiah(total));
-
-              el('details').innerHTML = lines
-                  .map(line => escapeHtml(line))
-                  .join('<br>');
-          }
-
-          function printNota() {
-              if (cart.length === 0) {
-                  alert('Keranjang masih kosong!');
-                  return;
-              }
-
-              if (window.Android && window.Android.printNota) {
-                  window.Android.printNota();
-              } else {
-                  window.print();
-              }
-          }
-
-          function share() {
-              if (cart.length === 0) {
-                  alert('Keranjang masih kosong!');
-                  return;
-              }
-
-              const text =
-                  'NOTA SIDE STAND STUDIO\\n' +
-                  el('details').innerText +
-                  '\\nTotal: ' + el('total').innerText;
-
-              if (navigator.share) {
-                  navigator.share({
-                      title: 'Nota Side Stand Studio',
-                      text: text
-                  }).catch(() => {});
-              } else if (navigator.clipboard) {
-                  navigator.clipboard.writeText(text)
-                      .then(() => alert('Rincian berhasil disalin!'))
-                      .catch(() => alert(text));
-              } else {
-                  alert(text);
-              }
-          }
-
-          function clearCart() {
-              if (cart.length === 0) {
-                  alert('Keranjang sudah kosong.');
-                  return;
-              }
-
-              if (confirm('Yakin ingin menghapus semua isi keranjang?')) {
-                  cart = [];
-                  editIndex = -1;
-
-                  el('formHeading').textContent =
-                      'Tambah produk ke keranjang';
-
-                  el('addButton').textContent =
-                      'TAMBAHKAN KE KERANJANG';
-
-                  el('cancelEditButton').classList.add('hidden');
-
-                  resetForm();
-                  renderCart();
-              }
-          }
-
-          setProduct('oblong');
-          renderCart();
-          </script>
-
-          </body>
-          </html>
-          """;
-              }
-          }
-          EOF
-
-      - name: Install Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-
-      - name: Build APK
-        run: gradle --no-daemon assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Side-Stand-Calculator-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+                  <button class="action red"
