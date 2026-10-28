@@ -141,7 +141,7 @@ jobs:
                   setContentView(web);
 
                   web.loadDataWithBaseURL(
-                      null,
+                      "https://appassets.androidplatform.net/",
                       html(),
                       "text/html",
                       "UTF-8",
@@ -615,15 +615,8 @@ jobs:
               </div>
           </div>
 
-          <div class="total">
-                     <small>TOTAL SELURUH PESANAN</small>
-              <div class="price" id="total">Rp0</div>
-              <div id="itemCount">0 item · 0 pcs</div>
-          </div>
-
-          <div class="box" style="margin-top:14px">
-              <b>Rincian nota</b>
-              <label>Nama pelanggan (opsional)</label>
+        
+          <opsional)</label>
               <input id="customerName" type="text" placeholder="Nama pelanggan">
               <label>Nomor WhatsApp (opsional)</label>
               <input id="customerPhone" type="tel" placeholder="08xxxxxxxxxx">
@@ -686,9 +679,24 @@ jobs:
               });
           }
 
+          function readNextInvoice() {
+              try {
+                  return Math.max(1, Number(window.localStorage.getItem('sssNextInvoice') || '1'));
+              } catch (e) {
+                  return 1;
+              }
+          }
+
+          function saveNextInvoice(value) {
+              try {
+                  window.localStorage.setItem('sssNextInvoice', String(value));
+              } catch (e) {
+                  // Keep the calculator working if storage is unavailable.
+              }
+          }
+
           function currentInvoiceNumber() {
-              const next = Math.max(1, Number(localStorage.getItem('sssNextInvoice') || '1'));
-              return '#SSS-' + String(next).padStart(4, '0');
+              return '#SSS-' + String(readNextInvoice()).padStart(4, '0');
           }
 
           function updateInvoiceNumber() {
@@ -701,8 +709,8 @@ jobs:
               if (!confirm('Sudah selesai mencetak atau menyimpan nota? Jika ya, keranjang dikosongkan dan nomor nota berikutnya dibuat.')) {
                   return;
               }
-              const next = Math.max(1, Number(localStorage.getItem('sssNextInvoice') || '1'));
-              localStorage.setItem('sssNextInvoice', String(next + 1));
+              const next = readNextInvoice();
+              saveNextInvoice(next + 1);
               cart = [];
               editIndex = -1;
               el('customerName').value = '';
@@ -957,6 +965,7 @@ jobs:
                       </div>`;
                   }).join('');
               }
+
               const total = cart.reduce(
                   (sum, item) => sum + item.subtotal, 0
               );
